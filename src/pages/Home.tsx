@@ -20,7 +20,7 @@ function Home() {
         <Col lg={3} className="d-none d-lg-block">
           <Card className="border-0 shadow-sm rounded-4">
             <Card.Body>
-              <h5 className="fw-bold">Bienvenido a Anti-Social Net</h5>
+              <h5 className="fw-bold">Bienvenido a Anti-Social Net GC</h5>
 
               <p className="text-secondary small">
                 Un espacio para compartir tus ideas, conocer personas y formar

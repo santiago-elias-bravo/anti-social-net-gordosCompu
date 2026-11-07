@@ -11,7 +11,7 @@ function Footer() {
 
           <Col md={6}>
             <h5 className="fw-bold">
-              Anti-Social Net
+              Anti-Social Net GC
             </h5>
 
             <p className="text-secondary mb-0">
@@ -48,7 +48,7 @@ function Footer() {
             </h6>
 
             <p className="text-secondary mb-0">
-              UnaHur Anti-Social Net
+              UnaHur Anti-Social Net GC
               <br />
               Trabajo práctico integrador
               <br />
@@ -62,7 +62,7 @@ function Footer() {
 
         <div className="text-center text-secondary">
           <small>
-            © 2026 UnaHur Anti-Social Net.
+            © 2026 UnaHur Anti-Social Net GC.
             Todos los derechos reservados.
           </small>
         </div>

@@ -14,7 +14,7 @@ function Navbar() {
       <Container>
         <Link to="/" className="navbar-brand fw-bold fs-4">
           <span className="bg-white text-dark rounded-3 px-2 py-1 me-2">A</span>
-          Anti-Social <span className="text-white">Net</span>
+          Anti-Social <span className="text-white">Net GC</span> 
         </Link>
 
         <BootstrapNavbar.Toggle aria-controls="navbar-content" />
