@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent, SubmitEvent } from "react";
 import { Container, Card, Form, Button, Alert, InputGroup, } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -117,7 +117,7 @@ function UserRegister() {
   }
 
   // Enviar el registro al backend
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (cargando) return;
@@ -227,7 +227,7 @@ function UserRegister() {
                   type="text"
                   name="nickName"
                   className="input-focus"
-                  placeholder="Ingresá tu nickname"
+                  placeholder="Ingresá tu nombre de usuario"
                   value={formData.nickName}
                   onChange={handleChange}
                   isInvalid={!!errors.nickName}

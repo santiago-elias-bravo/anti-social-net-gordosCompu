@@ -41,3 +41,39 @@ body {
   border-color: #86b7fe;
   box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.2);
 }
+
+/* Resultados del buscador de etiquetas */
+.tag-resultado {
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+.tag-resultado:hover {
+  background-color: #f1f3f5;
+}
+
+/* Recuadro para seleccionar imágenes */
+.imagen-upload {
+  border: 1px dashed #ced4da;
+  background-color: #f8f9fa;
+  min-height: 130px;
+  padding: 20px;
+  color: #495057;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.imagen-upload:hover:not(:disabled) {
+  background-color: #eef0f2;
+  border-color: #6c757d;
+}
+
+.imagen-upload:focus-visible {
+  outline: 2px solid #86b7fe;
+  outline-offset: 2px;
+}
+
+.imagen-upload:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
