@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, SubmitEvent } from "react";
 import { Container, Card, Form, Button, Alert, Badge } from "react-bootstrap";
 import { Link } from "react-router-dom";
+import { useUser } from "../context/UserContext";
 
 interface Tag {
   _id: string;
@@ -22,9 +23,8 @@ interface PostResponse {
 
 function NewPost() {
   const API_URL = import.meta.env.VITE_API_URL;
-
+  const { user } = useUser();
   const [description, setDescription] = useState("");
-  const [userId, setUserId] = useState("");
 
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagIds, setTagIds] = useState<string[]>([]);
@@ -245,30 +245,31 @@ function NewPost() {
 
   // Validar formulario
   function validateForm() {
-    if (userId.trim() === "") {
-      return "Ingresá un ID de usuario.";
-    }
-
-    if (!/^[a-fA-F0-9]{24}$/.test(userId.trim())) {
-      return "El ID de usuario debe ser un ObjectId válido.";
-    }
-
-    if (description.trim() === "") {
-      return "Ingresá una descripción para la publicación.";
-    }
-
-    if (description.trim().length > 2000) {
-      return "La descripción no puede superar los 2000 caracteres.";
-    }
-
-    return "";
+  if (!user) {
+    return "Debés iniciar sesión para crear una publicación.";
   }
+
+  if (description.trim() === "") {
+    return "Ingresá una descripción para la publicación.";
+  }
+
+  if (description.trim().length > 2000) {
+    return "La descripción no puede superar los 2000 caracteres.";
+  }
+
+  return "";
+}
 
   // Crear publicación y asociar imágenes
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (publicando || creandoEtiqueta) return;
+
+    if (!user) {
+      setError("Debés iniciar sesión para crear una publicación.");
+      return;
+    }
 
     const mensajeError = validateForm();
 
@@ -289,9 +290,9 @@ function NewPost() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          description: description.trim(),
-          userId: userId.trim(),
-          tagIds: tagIds,
+        description: description.trim(),
+        userId: user._id,
+        tagIds: tagIds,
         }),
       });
 
@@ -389,22 +390,6 @@ function NewPost() {
             )}
 
             <Form onSubmit={handleSubmit} noValidate>
-              {/* Usuario Prueba */}
-              <Form.Group className="mb-4">
-                <Form.Label className="fw-semibold">
-                  ID del usuario (pruebas) *
-                </Form.Label>
-
-                <Form.Control
-                  type="text"
-                  value={userId}
-                  onChange={(e) => {
-                    setUserId(e.target.value);
-                    setError("");
-                  }}
-                  disabled={publicando}
-                />
-              </Form.Group>
 
               {/* Descripción */}
               <Form.Group className="mb-4">

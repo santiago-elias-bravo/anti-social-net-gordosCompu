@@ -1,8 +1,17 @@
-import { Container, Navbar as BootstrapNavbar } from "react-bootstrap";
 
-import { Link } from "react-router-dom";
+import { Container, Navbar as BootstrapNavbar } from "react-bootstrap";
+import { Link, useNavigate } from "react-router-dom";
+import { useUser } from "../context/UserContext";
 
 function Navbar() {
+  const { user, logout } = useUser();
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logout();
+    navigate("/");
+  }
+
   return (
     <BootstrapNavbar
       expand="lg"
@@ -13,8 +22,10 @@ function Navbar() {
     >
       <Container>
         <Link to="/" className="navbar-brand fw-bold fs-4">
-          <span className="bg-white text-dark rounded-3 px-2 py-1 me-2">A</span>
-          Anti-Social <span className="text-white">Net GC</span> 
+          <span className="bg-white text-dark rounded-3 px-2 py-1 me-2">
+            A
+          </span>
+          Anti-Social <span className="text-white">Net GC</span>
         </Link>
 
         <BootstrapNavbar.Toggle aria-controls="navbar-content" />
@@ -25,19 +36,40 @@ function Navbar() {
               Inicio
             </Link>
 
-            <Link to="/nuevo-post" className="text-white text-decoration-none">
-              Crear publicación
-            </Link>
+            {user ? (
+              <>
+                <Link
+                  to="/nuevo-post"
+                  className="text-white text-decoration-none"
+                >
+                  Crear publicación
+                </Link>
 
-            <div className="d-flex gap-2">
-              <Link to="/login" className="btn btn-outline-light">
-                Iniciar sesión
-              </Link>
+                <Link
+                  to={`/perfil/${user._id}`}
+                  className="text-white text-decoration-none"
+                >
+                  Mi perfil
+                </Link>
 
-              <Link to="/registro" className="btn btn-primary">
-                Registrarse
-              </Link>
-            </div>
+                <button
+                  onClick={handleLogout}
+                  className="btn btn-outline-light"
+                >
+                  Cerrar sesión
+                </button>
+              </>
+            ) : (
+              <div className="d-flex gap-2">
+                <Link to="/login" className="btn btn-outline-light">
+                  Iniciar sesión
+                </Link>
+
+                <Link to="/registro" className="btn btn-primary">
+                  Registrarse
+                </Link>
+              </div>
+            )}
           </div>
         </BootstrapNavbar.Collapse>
       </Container>

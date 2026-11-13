@@ -1,15 +1,59 @@
+
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Container, Card, Form, Button } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import { Container, Card, Form, Button, Alert } from "react-bootstrap";
+import { Link, useNavigate } from "react-router-dom";
+import { useUser } from "../context/UserContext";
+import type { User } from "../context/UserContext";
 
 function Login() {
   const [nickName, setNickName] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [cargando, setCargando] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const { setUser } = useUser();
+  const navigate = useNavigate();
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    console.log({ nickName, password });
+    setError("");
+
+    if (password !== "123456") {
+      setError("La contraseña es incorrecta.");
+      return;
+    }
+
+    try {
+      setCargando(true);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/users`
+      );
+
+      if (!response.ok) {
+        throw new Error("No se pudo conectar con el servidor.");
+      }
+
+      const usuarios: User[] = await response.json();
+
+      const usuarioEncontrado = usuarios.find(
+        (usuario) =>
+          usuario.nickName.toLowerCase() === nickName.trim().toLowerCase()
+      );
+
+      if (!usuarioEncontrado) {
+        setError("No existe un usuario con ese nombre.");
+        return;
+      }
+
+      setUser(usuarioEncontrado);
+      navigate(`/perfil/${usuarioEncontrado._id}`);
+    } catch {
+      setError("Ocurrió un error al iniciar sesión. Intentá nuevamente.");
+    } finally {
+      setCargando(false);
+    }
   }
 
   return (
@@ -37,6 +81,8 @@ function Login() {
                 Ingresá a tu cuenta y seguí conectado.
               </p>
             </div>
+
+            {error && <Alert variant="danger">{error}</Alert>}
 
             <Form onSubmit={handleSubmit}>
               <Form.Group className="mb-3">
@@ -69,8 +115,9 @@ function Login() {
                 type="submit"
                 className="w-100 fw-semibold py-2"
                 variant="dark"
+                disabled={cargando}
               >
-                Iniciar sesión
+                {cargando ? "Ingresando..." : "Iniciar sesión"}
               </Button>
             </Form>
 

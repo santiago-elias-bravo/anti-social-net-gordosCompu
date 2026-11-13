@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -19,12 +20,15 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<UserRegister />} />
-          <Route path="/perfil/:id" element={<UserProfile />} />
-          <Route path="/nuevo-post" element={<NewPost />} />
-          <Route
-            path="/publicacion/:id"
-            element={<PublicationDetails />}
-          />
+
+          {/* Rutas que requieren iniciar sesión */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/perfil/:id" element={<UserProfile />} />
+            <Route path="/nuevo-post" element={<NewPost />} />
+          </Route>
+
+          {/* Detalle de publicación */}
+          <Route path="/publicacion/:id" element={<PublicationDetails />} />
         </Routes>
       </main>
       <Footer />
