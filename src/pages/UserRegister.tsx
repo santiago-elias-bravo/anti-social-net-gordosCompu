@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import type { ChangeEvent, SubmitEvent } from "react";
 import { Container, Card, Form, Button, Alert, InputGroup, } from "react-bootstrap";
@@ -190,13 +189,25 @@ function UserRegister() {
 
             {/* Encabezado */}
             <div className="text-center mb-4">
-              <div className="bg-dark text-white rounded-4 d-inline-flex justify-content-center align-items-center mb-3 fw-bold"
+              <div
+                className="bg-dark rounded-4 d-flex justify-content-center align-items-center mb-3 mx-auto"
                 style={{
                   width: "60px",
                   height: "60px",
-                  fontSize: "2rem",
-                }}>
-                A
+                  overflow: "hidden",
+                }}
+              >
+                <img
+                  src="/logo-white.png"
+                  alt="Logo Anti-Social"
+                  style={{
+                    width: "75%",
+                    height: "75%",
+                    objectFit: "contain",
+                    display: "block",
+                    margin: "auto",
+                  }}
+                />
               </div>
 
               <h2 className="fw-bold">

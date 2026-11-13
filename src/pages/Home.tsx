@@ -1,19 +1,143 @@
+import { useEffect, useState } from "react";
 import {
   Container,
   Row,
   Col,
   Card,
-  Button,
   Badge,
   Form,
+  Spinner,
+  Alert,
 } from "react-bootstrap";
-import { publicaciones, etiquetasPopulares } from "../data/publicaciones";
-
 import { Link } from "react-router-dom";
-
 import PostCard from "../components/PostCard";
+import { etiquetasPopulares } from "../data/publicaciones";
+
+interface Tag {
+  _id: string;
+  name: string;
+}
+
+interface Post {
+  _id: string;
+  description: string;
+  user: {
+    _id: string;
+    nickName: string;
+  };
+  tags: Tag[];
+}
+
+interface PostDetail {
+  comments: {
+    _id: string;
+    content: string;
+    userId: string;
+    postId: string;
+  }[];
+  images: {
+    _id: string;
+    url: string;
+    postId: string;
+  }[];
+}
+
+interface PostCardData {
+  id: string;
+  nickName: string;
+  fecha: string;
+  description: string;
+  tags: string[];
+  comentarios: number;
+  imagenes: string[];
+}
 
 function Home() {
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  const [publicaciones, setPublicaciones] = useState<PostCardData[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function obtenerPublicaciones() {
+      try {
+        setCargando(true);
+        setError("");
+
+        const response = await fetch(`${API_URL}/posts`);
+
+        if (!response.ok) {
+          throw new Error("No se pudieron obtener las publicaciones.");
+        }
+
+        const data: Post[] = await response.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error("El formato de las publicaciones es incorrecto.");
+        }
+
+        const publicacionesCompletas = await Promise.all(
+          data.map(async (post) => {
+            try {
+              const respuestaDetalle = await fetch(
+                `${API_URL}/posts/${post._id}`
+              );
+
+              if (!respuestaDetalle.ok) {
+                throw new Error("No se pudo obtener el detalle.");
+              }
+
+              const detalle: PostDetail = await respuestaDetalle.json();
+
+              return {
+                id: post._id,
+                nickName: post.user.nickName,
+                fecha: "Publicación",
+                description: post.description,
+                tags: post.tags.map((tag) => tag.name),
+                comentarios: Array.isArray(detalle.comments)
+                  ? detalle.comments.length
+                  : 0,
+                imagenes: Array.isArray(detalle.images)
+                  ? detalle.images.map((imagen) => imagen.url)
+                  : [],
+              };
+            } catch (error) {
+              console.error(
+                `Error al obtener el detalle de la publicación ${post._id}:`,
+                error
+              );
+
+              return {
+                id: post._id,
+                nickName: post.user.nickName,
+                fecha: "Publicación",
+                description: post.description,
+                tags: post.tags.map((tag) => tag.name),
+                comentarios: 0,
+                imagenes: [],
+              };
+            }
+          })
+        );
+
+        setPublicaciones(publicacionesCompletas);
+      } catch (error) {
+        console.error("Error al obtener publicaciones:", error);
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Ocurrió un error al cargar las publicaciones."
+        );
+      } finally {
+        setCargando(false);
+      }
+    }
+
+    obtenerPublicaciones();
+  }, [API_URL]);
+
   return (
     <Container className="py-4">
       <Row className="g-4">
@@ -68,14 +192,19 @@ function Home() {
 
           <Card className="border-0 shadow-sm rounded-4 mb-4">
             <Card.Body>
-              <Form.Control type="text" placeholder="¿Qué estás buscando?" />
+              <Form.Control
+                type="text"
+                placeholder="¿Qué estás buscando?"
+              />
             </Card.Body>
           </Card>
 
           <Card className="border-0 shadow-sm rounded-4 mb-4">
             <Card.Body className="d-flex justify-content-between align-items-center flex-wrap gap-3">
               <div>
-                <h6 className="fw-bold mb-1">¿Qué tenés para compartir?</h6>
+                <h6 className="fw-bold mb-1">
+                  ¿Qué tenés para compartir?
+                </h6>
 
                 <small className="text-secondary">
                   Creá una publicación para la comunidad.
@@ -94,17 +223,36 @@ function Home() {
             <small className="text-secondary">Más recientes</small>
           </div>
 
-          {publicaciones.map((post) => (
-            <PostCard
-              key={post.id}
-              id={post.id}
-              nickName={post.nickName}
-              fecha={post.fecha}
-              description={post.description}
-              tags={post.tags}
-              comentarios={post.comentarios}
-            />
-          ))}
+          {cargando && (
+            <div className="text-center py-5">
+              <Spinner animation="border" variant="dark" />
+              <p className="text-secondary mt-3">
+                Cargando publicaciones...
+              </p>
+            </div>
+          )}
+
+          {error && <Alert variant="danger">{error}</Alert>}
+
+          {!cargando && !error && publicaciones.length === 0 && (
+            <Alert variant="secondary">
+              Todavía no hay publicaciones.
+            </Alert>
+          )}
+
+          {!cargando &&
+            publicaciones.map((post) => (
+              <PostCard
+                key={post.id}
+                id={post.id}
+                nickName={post.nickName}
+                fecha={post.fecha}
+                description={post.description}
+                tags={post.tags}
+                comentarios={post.comentarios}
+                imagenes={post.imagenes}
+              />
+            ))}
         </Col>
 
         <Col lg={3} md={4}>
@@ -115,6 +263,7 @@ function Home() {
               <div className="d-flex flex-wrap gap-2">
                 {etiquetasPopulares.map((tag) => (
                   <Badge
+                    key={tag}
                     bg="light"
                     text="dark"
                     className="border rounded-pill px-3 py-2 fw-medium"

@@ -28,7 +28,7 @@ function App() {
           </Route>
 
           {/* Detalle de publicación */}
-          <Route path="/publicacion/:id" element={<PublicationDetails />} />
+          <Route path="/post/:id" element={<PublicationDetails />} />
         </Routes>
       </main>
       <Footer />

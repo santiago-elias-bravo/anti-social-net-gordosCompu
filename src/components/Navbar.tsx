@@ -1,4 +1,3 @@
-
 import { Container, Navbar as BootstrapNavbar } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
@@ -22,9 +21,27 @@ function Navbar() {
     >
       <Container>
         <Link to="/" className="navbar-brand fw-bold fs-4">
-          <span className="bg-white text-dark rounded-3 px-2 py-1 me-2">
-            A
-          </span>
+          <span
+  className="bg-white rounded-3 me-2 d-inline-flex justify-content-center align-items-center"
+  style={{
+    width: "34px",
+    height: "34px",
+    overflow: "hidden",
+    verticalAlign: "middle",
+  }}
+>
+  <img
+    src="/logo-black.png"
+    alt="Logo Anti-Social"
+    style={{
+      width: "75%",
+      height: "75%",
+      objectFit: "contain",
+      display: "block",
+      margin: "auto",
+    }}
+  />
+</span>
           Anti-Social <span className="text-white">Net GC</span>
         </Link>
 

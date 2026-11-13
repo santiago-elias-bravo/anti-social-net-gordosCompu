@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Container, Card, Form, Button, Alert } from "react-bootstrap";
@@ -66,14 +65,24 @@ function Login() {
           <Card.Body className="p-4 p-md-5">
             <div className="text-center mb-4">
               <div
-                className="bg-dark text-white rounded-4 d-inline-flex justify-content-center align-items-center mb-3 fw-bold"
+                className="bg-dark rounded-4 d-flex justify-content-center align-items-center mb-3 mx-auto"
                 style={{
                   width: "60px",
                   height: "60px",
-                  fontSize: "2rem",
+                  overflow: "hidden",
                 }}
               >
-                A
+                <img
+                  src="/logo-white.png"
+                  alt="Logo Anti-Social"
+                  style={{
+                    width: "75%",
+                    height: "75%",
+                    objectFit: "contain",
+                    display: "block",
+                    margin: "auto",
+                  }}
+                />
               </div>
 
               <h2 className="fw-bold">¡Qué bueno verte!</h2>
