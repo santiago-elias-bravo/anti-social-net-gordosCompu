@@ -31,7 +31,7 @@ function Navbar() {
   }}
 >
   <img
-    src="/logo-black.png"
+    src="/src/assets/logo-black.png"
     alt="Logo Anti-Social"
     style={{
       width: "75%",

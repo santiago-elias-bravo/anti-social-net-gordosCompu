@@ -23,6 +23,11 @@ interface Comment {
   postId: string;
 }
 
+interface CommentUser {
+  _id: string;
+  nickName: string;
+}
+
 interface PostImage {
   _id: string;
   url: string;
@@ -52,6 +57,9 @@ function PublicationDetails() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
+  const [usuariosComentarios, setUsuariosComentarios] = useState<
+    Record<string, string>
+  >({});
 
   const obtenerPublicacion = async () => {
     try {
@@ -71,7 +79,7 @@ function PublicationDetails() {
       setError(
         error instanceof Error
           ? error.message
-          : "Ocurrió un error al cargar la publicación."
+          : "Ocurrió un error al cargar la publicación.",
       );
     } finally {
       setCargando(false);
@@ -83,6 +91,47 @@ function PublicationDetails() {
       obtenerPublicacion();
     }
   }, [id, API_URL]);
+
+  useEffect(() => {
+    async function obtenerUsuariosComentarios() {
+      if (!publicacion) return;
+
+      const idsUsuarios = [
+        ...new Set(publicacion.comments.map((comment) => comment.userId)),
+      ];
+
+      if (idsUsuarios.length === 0) {
+        setUsuariosComentarios({});
+        return;
+      }
+
+      try {
+        const usuarios = await Promise.all(
+          idsUsuarios.map(async (userId) => {
+            const response = await fetch(`${API_URL}/users/${userId}`);
+
+            if (!response.ok) {
+              throw new Error(`No se pudo obtener el usuario ${userId}`);
+            }
+
+            return (await response.json()) as CommentUser;
+          }),
+        );
+
+        const nombres: Record<string, string> = {};
+
+        usuarios.forEach((usuario) => {
+          nombres[usuario._id] = usuario.nickName;
+        });
+
+        setUsuariosComentarios(nombres);
+      } catch (error) {
+        console.error("Error al obtener usuarios de comentarios:", error);
+      }
+    }
+
+    obtenerUsuariosComentarios();
+  }, [publicacion, API_URL]);
 
   async function enviarComentario(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -123,7 +172,7 @@ function PublicationDetails() {
       setMensaje(
         error instanceof Error
           ? error.message
-          : "Ocurrió un error al publicar el comentario."
+          : "Ocurrió un error al publicar el comentario.",
       );
     } finally {
       setEnviando(false);
@@ -134,9 +183,7 @@ function PublicationDetails() {
     return (
       <Container className="py-5 text-center">
         <Spinner animation="border" variant="dark" />
-        <p className="text-secondary mt-3">
-          Cargando publicación...
-        </p>
+        <p className="text-secondary mt-3">Cargando publicación...</p>
       </Container>
     );
   }
@@ -182,19 +229,13 @@ function PublicationDetails() {
               </div>
 
               <div>
-                <h5 className="fw-bold mb-0">
-                  {publicacion.user.nickName}
-                </h5>
-                <small className="text-secondary">
-                  Publicación
-                </small>
+                <h5 className="fw-bold mb-0">{publicacion.user.nickName}</h5>
+                <small className="text-secondary">Publicación</small>
               </div>
             </div>
 
             {/* Descripción */}
-            <p className="fs-5 text-break mb-4">
-              {publicacion.description}
-            </p>
+            <p className="fs-5 text-break mb-4">{publicacion.description}</p>
 
             {/* Imágenes */}
             {publicacion.images.length > 0 && (
@@ -243,9 +284,7 @@ function PublicationDetails() {
         <Card className="border-0 shadow-sm rounded-4">
           <Card.Body className="p-4 p-md-5">
             <div className="d-flex justify-content-between align-items-center mb-4">
-              <h3 className="fw-bold mb-0">
-                Comentarios
-              </h3>
+              <h3 className="fw-bold mb-0">Comentarios</h3>
 
               <Badge bg="dark" pill>
                 {publicacion.comments.length}
@@ -258,16 +297,38 @@ function PublicationDetails() {
               </p>
             ) : (
               <div className="d-flex flex-column gap-3 mb-4">
-                {publicacion.comments.map((comment) => (
-                  <div
-                    key={comment._id}
-                    className="bg-light rounded-3 p-3"
-                  >
-                    <p className="mb-0 text-break">
-                      {comment.content}
-                    </p>
-                  </div>
-                ))}
+                {publicacion.comments.map((comment) => {
+                  const nickName =
+                    usuariosComentarios[comment.userId] || "Usuario";
+
+                  return (
+                    <div
+                      key={comment._id}
+                      className="d-flex align-items-start gap-3"
+                    >
+                      {/* Inicial del usuario */}
+                      <div
+                        className="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center fw-bold flex-shrink-0"
+                        style={{
+                          width: "40px",
+                          height: "40px",
+                          fontSize: "1rem",
+                        }}
+                      >
+                        {nickName.charAt(0).toUpperCase()}
+                      </div>
+
+                      {/* Nombre y comentario */}
+                      <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                        <h6 className="fw-bold mb-2">{nickName}</h6>
+
+                        <div className="bg-light rounded-3 p-3">
+                          <p className="mb-0 text-break">{comment.content}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -276,9 +337,7 @@ function PublicationDetails() {
 
             {user ? (
               <>
-                <h5 className="fw-bold mb-3">
-                  Dejá tu comentario
-                </h5>
+                <h5 className="fw-bold mb-3">Dejá tu comentario</h5>
 
                 <Form onSubmit={enviarComentario}>
                   <Form.Group className="mb-3">
@@ -287,9 +346,7 @@ function PublicationDetails() {
                       rows={3}
                       placeholder="Escribí tu comentario..."
                       value={comentario}
-                      onChange={(event) =>
-                        setComentario(event.target.value)
-                      }
+                      onChange={(event) => setComentario(event.target.value)}
                       maxLength={2000}
                       required
                     />
@@ -298,9 +355,7 @@ function PublicationDetails() {
                   {mensaje && (
                     <Alert
                       variant={
-                        mensaje.includes("correctamente")
-                          ? "success"
-                          : "danger"
+                        mensaje.includes("correctamente") ? "success" : "danger"
                       }
                     >
                       {mensaje}
@@ -313,9 +368,7 @@ function PublicationDetails() {
                       variant="dark"
                       disabled={enviando || !comentario.trim()}
                     >
-                      {enviando
-                        ? "Publicando..."
-                        : "Publicar comentario"}
+                      {enviando ? "Publicando..." : "Publicar comentario"}
                     </Button>
                   </div>
                 </Form>

@@ -10,10 +10,12 @@ import NewPost from "./pages/NewPost";
 import PublicationDetails from "./pages/PublicationDetails";
 import UserProfile from "./pages/UserProfile";
 import UserRegister from "./pages/UserRegister";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   return (
     <div>
+      <ScrollToTop />
       <Navbar />
       <main>
         <Routes>

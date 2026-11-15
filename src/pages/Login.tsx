@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import { Container, Card, Form, Button, Alert } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
@@ -14,7 +14,7 @@ function Login() {
   const { setUser } = useUser();
   const navigate = useNavigate();
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
@@ -73,7 +73,7 @@ function Login() {
                 }}
               >
                 <img
-                  src="/logo-white.png"
+                  src="src/assets/logo-white.png"
                   alt="Logo Anti-Social"
                   style={{
                     width: "75%",
@@ -101,7 +101,7 @@ function Login() {
 
                 <Form.Control
                   type="text"
-                  placeholder="Ingresá tu nickname"
+                  placeholder="Ingresá tu nombre de usuario"
                   value={nickName}
                   onChange={(e) => setNickName(e.target.value)}
                   required
