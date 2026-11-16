@@ -198,7 +198,7 @@ function UserRegister() {
                 }}
               >
                 <img
-                  src="/logo-white.png"
+                  src="src/assets/logo-white.png"
                   alt="Logo Anti-Social"
                   style={{
                     width: "75%",
