@@ -7,7 +7,7 @@ import {
   Spinner,
   Button,
 } from "react-bootstrap";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 
 interface Tag {
@@ -31,27 +31,81 @@ function UserProfile() {
   const API_URL = import.meta.env.VITE_API_URL;
   const { user, logout } = useUser();
   const navigate = useNavigate();
+  //Barra de búsqueda
+  const { id: perfilId } = useParams();
+  const [perfil, setPerfil] = useState<{
+    _id: string;
+    nickName: string;
+    email: string;
+  } | null>(null);
+
+  const [siguiendo, setSiguiendo] = useState(false);
+  const [cambiandoSeguimiento, setCambiandoSeguimiento] = useState(false);
+
+  //Cantidad de seguidores y seguidos
+  const [cantidadSeguidores, setCantidadSeguidores] = useState(0);
+  const [cantidadSeguidos, setCantidadSeguidos] = useState(0);
 
   const [publicaciones, setPublicaciones] = useState<Post[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
+  async function handleSeguir() {
+    if (!user || !perfilId || cambiandoSeguimiento) return;
+
+    setCambiandoSeguimiento(true);
+
+    try {
+      const response = await fetch(
+        `${API_URL}/users/${user._id}/follow/${perfilId}`,
+        { method: siguiendo ? "DELETE" : "POST" },
+      );
+
+      if (!response.ok) {
+        throw new Error("No se pudo actualizar el seguimiento.");
+      }
+
+      setSiguiendo(!siguiendo);
+      setCantidadSeguidores((cantidad) => cantidad + (siguiendo ? -1 : 1));
+    } catch (error) {
+      console.error("Error al actualizar el seguimiento:", error);
+    } finally {
+      setCambiandoSeguimiento(false);
+    }
+  }
+
   function handleLogout() {
     navigate("/");
     logout();
   }
+  //Efecto de la persona elegida
+  useEffect(() => {
+    if (!perfilId) return;
 
+    async function cargarPerfil() {
+      try {
+        const response = await fetch(`${API_URL}/users/${perfilId}`);
+        if (!response.ok) throw new Error("No se pudo cargar el perfil.");
+
+        setPerfil(await response.json());
+      } catch (error) {
+        console.error("Error al cargar el perfil:", error);
+      }
+    }
+
+    cargarPerfil();
+  }, [API_URL, perfilId]);
+
+  //Efecto de las publicaciones
   useEffect(() => {
     async function obtenerPublicaciones() {
-      if (!user) return;
+      if (!perfilId) return;
 
       try {
         setCargando(true);
         setError("");
 
-        const response = await fetch(
-          `${API_URL}/posts?userId=${user._id}`
-        );
+        const response = await fetch(`${API_URL}/posts?userId=${perfilId}`);
 
         if (!response.ok) {
           throw new Error("No se pudieron obtener las publicaciones.");
@@ -70,7 +124,7 @@ function UserProfile() {
           publicacionesUsuario.map(async (post: Post) => {
             try {
               const respuestaDetalle = await fetch(
-                `${API_URL}/posts/${post._id}`
+                `${API_URL}/posts/${post._id}`,
               );
 
               if (!respuestaDetalle.ok) {
@@ -85,9 +139,7 @@ function UserProfile() {
                   ? detalle.comments.length
                   : 0,
                 imagenes: Array.isArray(detalle.images)
-                  ? detalle.images.map(
-                      (imagen: { url: string }) => imagen.url
-                    )
+                  ? detalle.images.map((imagen: { url: string }) => imagen.url)
                   : [],
               };
             } catch {
@@ -97,7 +149,7 @@ function UserProfile() {
                 imagenes: [],
               };
             }
-          })
+          }),
         );
 
         setPublicaciones(publicacionesConComentarios);
@@ -106,7 +158,7 @@ function UserProfile() {
         setError(
           error instanceof Error
             ? error.message
-            : "Ocurrió un error al cargar el perfil."
+            : "Ocurrió un error al cargar el perfil.",
         );
       } finally {
         setCargando(false);
@@ -114,9 +166,53 @@ function UserProfile() {
     }
 
     obtenerPublicaciones();
-  }, [API_URL, user]);
+  }, [API_URL, perfilId]);
 
-  if (!user) return null;
+  //Para cargar los seguidores
+  useEffect(() => {
+    if (!user || !perfilId) return;
+
+    const usuarioActualId = user._id;
+
+    async function cargarContadores() {
+      try {
+        const [respuestaSeguidores, respuestaSeguidos, respuestaSeguidosPorMi] =
+          await Promise.all([
+            fetch(`${API_URL}/users/${perfilId}/followers`),
+            fetch(`${API_URL}/users/${perfilId}/following`),
+            fetch(`${API_URL}/users/${usuarioActualId}/following`),
+          ]);
+
+        if (
+          !respuestaSeguidores.ok ||
+          !respuestaSeguidos.ok ||
+          !respuestaSeguidosPorMi.ok
+        ) {
+          throw new Error("No se pudieron cargar los contadores.");
+        }
+
+        const [seguidores, seguidos, seguidosPorMi] = await Promise.all([
+          respuestaSeguidores.json(),
+          respuestaSeguidos.json(),
+          respuestaSeguidosPorMi.json(),
+        ]);
+
+        setCantidadSeguidores(seguidores.length);
+        setCantidadSeguidos(seguidos.length);
+        setSiguiendo(
+          seguidosPorMi.some(
+            (seguido: { _id: string }) => seguido._id === perfilId,
+          ),
+        );
+      } catch (error) {
+        console.error("Error al cargar seguidores y seguidos:", error);
+      }
+    }
+
+    cargarContadores();
+  }, [API_URL, perfilId, user]);
+
+  if (!user || !perfil) return null;
 
   return (
     <Container className="py-4 py-md-5">
@@ -134,21 +230,42 @@ function UserProfile() {
                     fontSize: "1.6rem",
                   }}
                 >
-                  {user.nickName.charAt(0).toUpperCase()}
+                  {perfil.nickName.charAt(0).toUpperCase()}
                 </div>
 
                 <div>
-                  <h1 className="fw-bold mb-1">{user.nickName}</h1>
+                  <h1 className="fw-bold mb-1">{perfil.nickName}</h1>
                   <p className="text-secondary mb-0">
-                    Mi perfil
+                    {perfilId === user._id ? "Mi perfil" : "Perfil"}
                   </p>
+                  <div className="d-flex gap-3 mt-2 text-secondary">
+                    <span>
+                      <strong className="text-dark">
+                        {cantidadSeguidores}
+                      </strong>{" "}
+                      seguidores
+                    </span>
+                    <span>
+                      <strong className="text-dark">{cantidadSeguidos}</strong>{" "}
+                      seguidos
+                    </span>
+                  </div>
                 </div>
               </div>
-
-              <Button
-                variant="outline-danger"
-                onClick={handleLogout}
-              >
+              {perfilId !== user._id && (
+                <Button
+                  variant={siguiendo ? "outline-dark" : "dark"}
+                  onClick={handleSeguir}
+                  disabled={cambiandoSeguimiento}
+                >
+                  {cambiandoSeguimiento
+                    ? "Actualizando..."
+                    : siguiendo
+                      ? "Dejar de seguir"
+                      : "Seguir"}
+                </Button>
+              )}
+              <Button variant="outline-danger" onClick={handleLogout}>
                 Cerrar sesión
               </Button>
             </div>
@@ -167,9 +284,7 @@ function UserProfile() {
         {cargando && (
           <div className="text-center py-5">
             <Spinner animation="border" variant="dark" />
-            <p className="text-secondary mt-3">
-              Cargando publicaciones...
-            </p>
+            <p className="text-secondary mt-3">Cargando publicaciones...</p>
           </div>
         )}
 
@@ -192,27 +307,20 @@ function UserProfile() {
 
         {!cargando &&
           publicaciones.map((post) => (
-            <Card
-              key={post._id}
-              className="border-0 shadow-sm rounded-4 mb-3"
-            >
+            <Card key={post._id} className="border-0 shadow-sm rounded-4 mb-3">
               <Card.Body className="p-4">
                 <div className="d-flex align-items-center gap-2 mb-3">
                   <div
                     className="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center fw-bold"
                     style={{ width: "35px", height: "35px" }}
                   >
-                    {user.nickName.charAt(0).toUpperCase()}
+                    {post.user.nickName.charAt(0).toUpperCase()}
                   </div>
 
-                  <span className="fw-semibold">
-                    {user.nickName}
-                  </span>
+                  <span className="fw-semibold">{post.user.nickName}</span>
                 </div>
 
-                <p className="mb-3 text-break">
-                  {post.description}
-                </p>
+                <p className="mb-3 text-break">{post.description}</p>
 
                 {/* Imágenes */}
                 {post.imagenes.length > 0 && (

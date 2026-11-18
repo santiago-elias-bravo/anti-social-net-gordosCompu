@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { SubmitEvent } from "react";
-import { Container, Card, Form, Button, Alert } from "react-bootstrap";
+import { Container, Card, Form, Button, Alert, InputGroup } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import type { User } from "../context/UserContext";
@@ -10,6 +10,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
+  const [mostrarPassword, setMostrarPassword] = useState(false);
 
   const { setUser } = useUser();
   const navigate = useNavigate();
@@ -26,9 +27,7 @@ function Login() {
     try {
       setCargando(true);
 
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/users`
-      );
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/users`);
 
       if (!response.ok) {
         throw new Error("No se pudo conectar con el servidor.");
@@ -38,7 +37,7 @@ function Login() {
 
       const usuarioEncontrado = usuarios.find(
         (usuario) =>
-          usuario.nickName.toLowerCase() === nickName.trim().toLowerCase()
+          usuario.nickName.toLowerCase() === nickName.trim().toLowerCase(),
       );
 
       if (!usuarioEncontrado) {
@@ -111,13 +110,28 @@ function Login() {
               <Form.Group className="mb-4">
                 <Form.Label className="fw-semibold">Contraseña</Form.Label>
 
-                <Form.Control
-                  type="password"
-                  placeholder="Ingresá tu contraseña"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <InputGroup>
+                  <Form.Control
+                    type={mostrarPassword ? "text" : "password"}
+                    placeholder="Ingresá tu contraseña"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+
+                  <Button
+                    type="button"
+                    variant="outline-secondary"
+                    onClick={() => setMostrarPassword(!mostrarPassword)}
+                    aria-label={
+                      mostrarPassword
+                        ? "Ocultar contraseña"
+                        : "Mostrar contraseña"
+                    }
+                  >
+                    {mostrarPassword ? "Ocultar" : "Ver"}
+                  </Button>
+                </InputGroup>
               </Form.Group>
 
               <Button

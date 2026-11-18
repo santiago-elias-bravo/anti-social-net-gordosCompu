@@ -76,7 +76,6 @@ function Home() {
         if (!Array.isArray(data)) {
           throw new Error("El formato de las publicaciones es incorrecto.");
         }
-
         const publicacionesCompletas = await Promise.all(
           data.map(async (post) => {
             try {

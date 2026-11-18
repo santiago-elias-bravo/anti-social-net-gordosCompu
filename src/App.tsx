@@ -14,10 +14,10 @@ import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   return (
-    <div>
+    <div className="d-flex flex-column min-vh-100">
       <ScrollToTop />
       <Navbar />
-      <main>
+      <main className="flex-grow-1">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
