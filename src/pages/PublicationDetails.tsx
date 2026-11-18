@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type SubmitEvent } from "react";
 import {
   Container,
   Card,
@@ -8,7 +8,7 @@ import {
   Spinner,
   Form,
 } from "react-bootstrap";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 
 interface Tag {
@@ -19,13 +19,11 @@ interface Tag {
 interface Comment {
   _id: string;
   content: string;
-  userId: string;
+  userId: {
+    _id: string;
+    nickName: string;
+  };
   postId: string;
-}
-
-interface CommentUser {
-  _id: string;
-  nickName: string;
 }
 
 interface PostImage {
@@ -57,89 +55,232 @@ function PublicationDetails() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
-  const [usuariosComentarios, setUsuariosComentarios] = useState<
-    Record<string, string>
-  >({});
+  const [eliminandoComentarioId, setEliminandoComentarioId] = useState<
+    string | null
+  >(null);
+  const [eliminandoPublicacion, setEliminandoPublicacion] = useState(false);
+  const [errorEliminacion, setErrorEliminacion] = useState("");
+  const [errorComentario, setErrorComentario] = useState<{
+    id: string;
+    mensaje: string;
+  } | null>(null);
+  const navigate = useNavigate();
 
-  const obtenerPublicacion = async () => {
+  useEffect(() => {
+    if (mensaje !== "Comentario publicado correctamente.") return;
+
+    const timer = setTimeout(() => {
+      setMensaje("");
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [mensaje]);
+
+  async function actualizarComentarios() {
+    if (!id) return;
+
     try {
-      setCargando(true);
-      setError("");
-
       const response = await fetch(`${API_URL}/posts/${id}`);
 
       if (!response.ok) {
-        throw new Error("No se pudo obtener la publicación.");
+        throw new Error("No se pudieron actualizar los comentarios.");
       }
 
       const data: PostDetail = await response.json();
-      setPublicacion(data);
+
+      setPublicacion((publicacionActual) => {
+        if (!publicacionActual || publicacionActual._id !== id) {
+          return publicacionActual;
+        }
+
+        return {
+          ...publicacionActual,
+          comments: data.comments,
+        };
+      });
     } catch (error) {
-      console.error("Error al obtener la publicación:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Ocurrió un error al cargar la publicación.",
+      console.error("Error al actualizar comentarios:", error);
+      setMensaje(
+        "El comentario se publicó, pero no se pudo actualizar la lista. Actualizá la página para verlo.",
+      );
+    }
+  }
+
+  async function eliminarPublicacion() {
+    if (
+      !user ||
+      !publicacion ||
+      user._id !== publicacion.user._id ||
+      enviando ||
+      eliminandoPublicacion ||
+      eliminandoComentarioId
+    ) {
+      return;
+    }
+
+    const confirmar = window.confirm(
+      "¿Estás seguro de que querés eliminar esta publicación? También se eliminarán todos sus comentarios e imágenes. Esta acción no se puede deshacer.",
+    );
+
+    if (!confirmar) return;
+
+    try {
+      setEliminandoPublicacion(true);
+      setErrorEliminacion("");
+
+      const response = await fetch(`${API_URL}/posts/${publicacion._id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+
+        console.error("Error al eliminar publicación:", {
+          status: response.status,
+          respuesta: errorData,
+        });
+
+        throw new Error(
+          errorData?.message || "No se pudo eliminar la publicación.",
+        );
+      }
+
+      // Regresar al perfil del usuario
+      navigate(`/perfil/${user._id}`, { replace: true });
+    } catch (error) {
+      console.error("Error al eliminar publicación:", error);
+      setErrorEliminacion(
+        "No se pudo eliminar la publicación. Intentá nuevamente.",
       );
     } finally {
-      setCargando(false);
+      setEliminandoPublicacion(false);
     }
-  };
+  }
+
+  async function eliminarComentario(commentId: string, autorId: string) {
+    if (
+      !user ||
+      user._id !== autorId ||
+      enviando ||
+      eliminandoPublicacion ||
+      eliminandoComentarioId !== null
+    ) {
+      return;
+    }
+
+    const confirmar = window.confirm(
+      "¿Estás seguro de que querés eliminar este comentario?",
+    );
+
+    if (!confirmar) return;
+
+    try {
+      setEliminandoComentarioId(commentId);
+      setErrorComentario(null);
+
+      const response = await fetch(`${API_URL}/comments/${commentId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("No se pudo eliminar el comentario.");
+      }
+
+      setPublicacion((publicacionActual) => {
+        if (!publicacionActual) return null;
+
+        return {
+          ...publicacionActual,
+          comments: publicacionActual.comments.filter(
+            (comment) => comment._id !== commentId,
+          ),
+        };
+      });
+    } catch (error) {
+      console.error("Error al eliminar comentario:", error);
+
+      setErrorComentario({
+        id: commentId,
+        mensaje: "No se pudo eliminar el comentario. Intentá nuevamente.",
+      });
+    } finally {
+      setEliminandoComentarioId(null);
+    }
+  }
 
   useEffect(() => {
-    if (id) {
-      obtenerPublicacion();
-    }
-  }, [id, API_URL]);
+    const controller = new AbortController();
 
-  useEffect(() => {
-    async function obtenerUsuariosComentarios() {
-      if (!publicacion) return;
-
-      const idsUsuarios = [
-        ...new Set(publicacion.comments.map((comment) => comment.userId)),
-      ];
-
-      if (idsUsuarios.length === 0) {
-        setUsuariosComentarios({});
+    async function obtenerPublicacion() {
+      if (!id) {
+        setPublicacion(null);
+        setError("No se encontró la publicación.");
+        setCargando(false);
         return;
       }
 
       try {
-        const usuarios = await Promise.all(
-          idsUsuarios.map(async (userId) => {
-            const response = await fetch(`${API_URL}/users/${userId}`);
+        setCargando(true);
+        setError("");
+        setPublicacion(null);
 
-            if (!response.ok) {
-              throw new Error(`No se pudo obtener el usuario ${userId}`);
-            }
-
-            return (await response.json()) as CommentUser;
-          }),
-        );
-
-        const nombres: Record<string, string> = {};
-
-        usuarios.forEach((usuario) => {
-          nombres[usuario._id] = usuario.nickName;
+        const response = await fetch(`${API_URL}/posts/${id}`, {
+          signal: controller.signal,
         });
 
-        setUsuariosComentarios(nombres);
+        if (!response.ok) {
+          throw new Error("No se pudo obtener la publicación.");
+        }
+
+        const data: PostDetail = await response.json();
+
+        if (controller.signal.aborted) return;
+
+        setPublicacion(data);
       } catch (error) {
-        console.error("Error al obtener usuarios de comentarios:", error);
+        if (controller.signal.aborted) return;
+
+        console.error("Error al obtener la publicación:", error);
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Ocurrió un error al cargar la publicación.",
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setCargando(false);
+        }
       }
     }
 
-    obtenerUsuariosComentarios();
-  }, [publicacion, API_URL]);
+    void obtenerPublicacion();
 
-  async function enviarComentario(event: FormEvent<HTMLFormElement>) {
+    return () => {
+      controller.abort();
+    };
+  }, [id, API_URL]);
+
+  async function enviarComentario(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!user || !id) return;
+    if (
+      enviando ||
+      !user ||
+      !id ||
+      eliminandoPublicacion ||
+      eliminandoComentarioId !== null
+    ) {
+      return;
+    }
 
     if (!comentario.trim()) {
       setMensaje("El comentario no puede estar vacío.");
+      return;
+    }
+
+    if (comentario.trim().length > 2000) {
+      setMensaje("El comentario no puede superar los 2000 caracteres.");
       return;
     }
 
@@ -166,7 +307,7 @@ function PublicationDetails() {
       setComentario("");
       setMensaje("Comentario publicado correctamente.");
 
-      await obtenerPublicacion();
+      await actualizarComentarios();
     } catch (error) {
       console.error("Error al publicar el comentario:", error);
       setMensaje(
@@ -216,22 +357,62 @@ function PublicationDetails() {
         <Card className="border-0 shadow-sm rounded-4 mb-4">
           <Card.Body className="p-4 p-md-5">
             {/* Autor */}
-            <div className="d-flex align-items-center gap-3 mb-4">
-              <div
-                className="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center fw-bold"
-                style={{
-                  width: "45px",
-                  height: "45px",
-                  fontSize: "1.2rem",
-                }}
-              >
-                {publicacion.user.nickName.charAt(0).toUpperCase()}
+            <div className="d-flex justify-content-between align-items-center gap-3 mb-4">
+              <div className="d-flex align-items-center gap-3">
+                <div
+                  className="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center fw-bold"
+                  style={{
+                    width: "45px",
+                    height: "45px",
+                    fontSize: "1.2rem",
+                  }}
+                >
+                  {publicacion.user.nickName.charAt(0).toUpperCase()}
+                </div>
+
+                <div>
+                  <h5 className="fw-bold mb-0">{publicacion.user.nickName}</h5>
+                  <small className="text-secondary">Publicación</small>
+                </div>
               </div>
 
-              <div>
-                <h5 className="fw-bold mb-0">{publicacion.user.nickName}</h5>
-                <small className="text-secondary">Publicación</small>
-              </div>
+              {/* Solo el autor puede eliminar la publicación */}
+              {user?._id === publicacion.user._id && (
+                <Button
+                  type="button"
+                  variant="outline-danger"
+                  size="sm"
+                  title="Eliminar publicación"
+                  aria-label="Eliminar publicación"
+                  disabled={
+                    eliminandoPublicacion ||
+                    eliminandoComentarioId !== null ||
+                    enviando
+                  }
+                  onClick={eliminarPublicacion}
+                >
+                  {eliminandoPublicacion ? (
+                    <Spinner animation="border" size="sm" />
+                  ) : (
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4h8v2" />
+                      <path d="M19 6l-1 14H6L5 6" />
+                      <path d="M10 10v6M14 10v6" />
+                    </svg>
+                  )}
+                </Button>
+              )}
             </div>
 
             {/* Descripción */}
@@ -281,6 +462,15 @@ function PublicationDetails() {
         </Card>
 
         {/* Comentarios */}
+        {errorEliminacion && (
+          <Alert
+            variant="danger"
+            dismissible
+            onClose={() => setErrorEliminacion("")}
+          >
+            {errorEliminacion}
+          </Alert>
+        )}
         <Card className="border-0 shadow-sm rounded-4">
           <Card.Body className="p-4 p-md-5">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -298,8 +488,7 @@ function PublicationDetails() {
             ) : (
               <div className="d-flex flex-column gap-3 mb-4">
                 {publicacion.comments.map((comment) => {
-                  const nickName =
-                    usuariosComentarios[comment.userId] || "Usuario";
+                  const nickName = comment.userId?.nickName || "Usuario";
 
                   return (
                     <div
@@ -320,11 +509,68 @@ function PublicationDetails() {
 
                       {/* Nombre y comentario */}
                       <div className="flex-grow-1" style={{ minWidth: 0 }}>
-                        <h6 className="fw-bold mb-2">{nickName}</h6>
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <h6 className="fw-bold mb-0">{nickName}</h6>
+
+                          {/* Solo el autor puede ver la papelera */}
+                          {user?._id === comment.userId?._id && (
+                            <Button
+                              type="button"
+                              variant="outline-danger"
+                              size="sm"
+                              title="Eliminar comentario"
+                              aria-label="Eliminar comentario"
+                              disabled={
+                                eliminandoComentarioId !== null ||
+                                eliminandoPublicacion ||
+                                enviando
+                              }
+                              onClick={() =>
+                                eliminarComentario(
+                                  comment._id,
+                                  comment.userId._id,
+                                )
+                              }
+                            >
+                              {eliminandoComentarioId === comment._id ? (
+                                <Spinner animation="border" size="sm" />
+                              ) : (
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M3 6h18" />
+                                  <path d="M8 6V4h8v2" />
+                                  <path d="M19 6l-1 14H6L5 6" />
+                                  <path d="M10 10v6M14 10v6" />
+                                </svg>
+                              )}
+                            </Button>
+                          )}
+                        </div>
 
                         <div className="bg-light rounded-3 p-3">
                           <p className="mb-0 text-break">{comment.content}</p>
                         </div>
+
+                        {/* Error al eliminar este comentario */}
+                        {errorComentario?.id === comment._id && (
+                          <Alert
+                            variant="danger"
+                            dismissible
+                            className="mt-2 mb-0 small"
+                            onClose={() => setErrorComentario(null)}
+                          >
+                            {errorComentario.mensaje}
+                          </Alert>
+                        )}
                       </div>
                     </div>
                   );
@@ -366,7 +612,12 @@ function PublicationDetails() {
                     <Button
                       type="submit"
                       variant="dark"
-                      disabled={enviando || !comentario.trim()}
+                      disabled={
+                        enviando ||
+                        !comentario.trim() ||
+                        eliminandoPublicacion ||
+                        eliminandoComentarioId !== null
+                      }
                     >
                       {enviando ? "Publicando..." : "Publicar comentario"}
                     </Button>
