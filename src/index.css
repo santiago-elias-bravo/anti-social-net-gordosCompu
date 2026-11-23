@@ -76,3 +76,50 @@ body {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.buscador-usuarios {
+  width: 100%;
+}
+
+@media (min-width: 992px) {
+  .buscador-usuarios {
+    width: 260px;
+  }
+}
+
+.resultados-usuarios {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1050;
+  width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 15%);
+  scrollbar-width: thin;
+}
+
+.resultado-usuario {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+  background: #fff;
+  border: 0;
+  transition: background-color 0.15s ease;
+}
+
+.resultado-usuario:hover,
+.resultado-usuario:focus-visible {
+  background: #f1f3f5;
+  outline: none;
+}
+
+.resultado-usuario + .resultado-usuario {
+  border-top: 1px solid #eee;
+}
+

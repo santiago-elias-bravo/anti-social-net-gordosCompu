@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { Container, Navbar as BootstrapNavbar, Form } from "react-bootstrap";
+import {
+  Container,
+  Navbar as BootstrapNavbar,
+  Form,
+  InputGroup,
+} from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 
@@ -26,6 +31,7 @@ function Navbar() {
     logout();
     navigate("/");
   }
+  
   useEffect(() => {
     async function cargarUsuarios() {
       try {
@@ -80,22 +86,32 @@ function Navbar() {
 
         <BootstrapNavbar.Collapse id="navbar-content">
           <div className="d-flex flex-column flex-lg-row align-items-lg-center gap-3 ms-auto mt-3 mt-lg-0">
-            <div className="position-relative">
-              <Form.Control
-                type="search"
-                placeholder="Buscar usuarios..."
-                value={busqueda}
-                onChange={(event) => setBusqueda(event.target.value)}
-              />
+            <div className="position-relative buscador-usuarios">
+              <InputGroup>
+                <InputGroup.Text className="bg-white border-end-0">
+                  <span role="img" aria-label="Buscar">
+                    🔍
+                  </span>
+                </InputGroup.Text>
+
+                <Form.Control
+                  type="search"
+                  aria-label="Buscar usuarios"
+                  placeholder="Buscar..."
+                  value={busqueda}
+                  onChange={(event) => setBusqueda(event.target.value)}
+                  className="border-start-0"
+                />
+              </InputGroup>
 
               {busqueda.trim() !== "" && (
-                <div className="position-absolute top-100 start-0 w-100 bg-white shadow rounded mt-1 z-3">
+                <div className="resultados-usuarios">
                   {usuariosFiltrados.length > 0 ? (
                     usuariosFiltrados.map((usuario) => (
                       <button
                         key={usuario._id}
                         type="button"
-                        className="w-100 text-start border-0 bg-white px-3 py-2"
+                        className="resultado-usuario"
                         onClick={() => {
                           setBusqueda("");
                           navigate(`/perfil/${usuario._id}`);

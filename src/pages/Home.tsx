@@ -11,7 +11,6 @@ import {
 } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import PostCard from "../components/PostCard";
-import { etiquetasPopulares } from "../data/publicaciones";
 
 interface Tag {
   _id: string;
@@ -59,6 +58,7 @@ function Home() {
   const [publicaciones, setPublicaciones] = useState<PostCardData[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
+  const [etiquetasPopulares, setEtiquetasPopulares] = useState<Tag[]>([]);
 
   useEffect(() => {
     async function obtenerPublicaciones() {
@@ -142,8 +142,29 @@ function Home() {
         setCargando(false);
       }
     }
+    async function obtenerEtiquetasAleatorias() {
+      try {
+        const response = await fetch(`${API_URL}/tags`);
+
+        if (!response.ok) {
+          throw new Error("No se pudieron obtener las etiquetas.");
+        }
+
+        const data: Tag[] = await response.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error("El formato de las etiquetas es incorrecto.");
+        }
+
+        const etiquetasMezcladas = [...data].sort(() => Math.random() - 0.5);
+        setEtiquetasPopulares(etiquetasMezcladas.slice(0, 5));
+      } catch (error) {
+        console.error("Error al obtener etiquetas:", error);
+      }
+    }
 
     obtenerPublicaciones();
+    obtenerEtiquetasAleatorias();
   }, [API_URL]);
 
   return (
@@ -262,12 +283,12 @@ function Home() {
               <div className="d-flex flex-wrap gap-2">
                 {etiquetasPopulares.map((tag) => (
                   <Badge
-                    key={tag}
+                    key={tag._id}
                     bg="light"
                     text="dark"
                     className="border rounded-pill px-3 py-2 fw-medium"
                   >
-                    #{tag}
+                    #{tag.name}
                   </Badge>
                 ))}
               </div>
