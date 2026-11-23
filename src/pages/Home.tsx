@@ -21,6 +21,7 @@ interface Tag {
 interface Post {
   _id: string;
   description: string;
+  createdAt: string;
   user: {
     _id: string;
     nickName: string;
@@ -80,7 +81,7 @@ function Home() {
           data.map(async (post) => {
             try {
               const respuestaDetalle = await fetch(
-                `${API_URL}/posts/${post._id}`
+                `${API_URL}/posts/${post._id}`,
               );
 
               if (!respuestaDetalle.ok) {
@@ -92,7 +93,11 @@ function Home() {
               return {
                 id: post._id,
                 nickName: post.user.nickName,
-                fecha: "Publicación",
+                fecha: new Date(post.createdAt).toLocaleDateString("es-AR", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                }),
                 description: post.description,
                 tags: post.tags.map((tag) => tag.name),
                 comentarios: Array.isArray(detalle.comments)
@@ -105,20 +110,24 @@ function Home() {
             } catch (error) {
               console.error(
                 `Error al obtener el detalle de la publicación ${post._id}:`,
-                error
+                error,
               );
 
               return {
                 id: post._id,
                 nickName: post.user.nickName,
-                fecha: "Publicación",
+                fecha: new Date(post.createdAt).toLocaleDateString("es-AR", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                }),
                 description: post.description,
                 tags: post.tags.map((tag) => tag.name),
                 comentarios: 0,
                 imagenes: [],
               };
             }
-          })
+          }),
         );
 
         setPublicaciones(publicacionesCompletas);
@@ -127,7 +136,7 @@ function Home() {
         setError(
           error instanceof Error
             ? error.message
-            : "Ocurrió un error al cargar las publicaciones."
+            : "Ocurrió un error al cargar las publicaciones.",
         );
       } finally {
         setCargando(false);
@@ -191,19 +200,14 @@ function Home() {
 
           <Card className="border-0 shadow-sm rounded-4 mb-4">
             <Card.Body>
-              <Form.Control
-                type="text"
-                placeholder="¿Qué estás buscando?"
-              />
+              <Form.Control type="text" placeholder="¿Qué estás buscando?" />
             </Card.Body>
           </Card>
 
           <Card className="border-0 shadow-sm rounded-4 mb-4">
             <Card.Body className="d-flex justify-content-between align-items-center flex-wrap gap-3">
               <div>
-                <h6 className="fw-bold mb-1">
-                  ¿Qué tenés para compartir?
-                </h6>
+                <h6 className="fw-bold mb-1">¿Qué tenés para compartir?</h6>
 
                 <small className="text-secondary">
                   Creá una publicación para la comunidad.
@@ -225,18 +229,14 @@ function Home() {
           {cargando && (
             <div className="text-center py-5">
               <Spinner animation="border" variant="dark" />
-              <p className="text-secondary mt-3">
-                Cargando publicaciones...
-              </p>
+              <p className="text-secondary mt-3">Cargando publicaciones...</p>
             </div>
           )}
 
           {error && <Alert variant="danger">{error}</Alert>}
 
           {!cargando && !error && publicaciones.length === 0 && (
-            <Alert variant="secondary">
-              Todavía no hay publicaciones.
-            </Alert>
+            <Alert variant="secondary">Todavía no hay publicaciones.</Alert>
           )}
 
           {!cargando &&

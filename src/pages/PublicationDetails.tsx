@@ -35,6 +35,7 @@ interface PostImage {
 interface PostDetail {
   _id: string;
   description: string;
+  createdAt: string;
   user: {
     _id: string;
     nickName: string;
@@ -372,7 +373,15 @@ function PublicationDetails() {
 
                 <div>
                   <h5 className="fw-bold mb-0">{publicacion.user.nickName}</h5>
-                  <small className="text-secondary">Publicación</small>
+                  <small className="text-secondary">
+                    {new Date(publicacion.createdAt).toLocaleString("es-AR", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </small>
                 </div>
               </div>
 
