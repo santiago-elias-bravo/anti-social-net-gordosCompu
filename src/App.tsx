@@ -26,6 +26,9 @@ function App() {
           {/* Rutas que requieren iniciar sesión */}
           <Route element={<ProtectedRoute />}>
             <Route path="/perfil/:id" element={<UserProfile />} />
+          </Route>
+
+          <Route element={<ProtectedRoute disallowAdmin />}>
             <Route path="/nuevo-post" element={<NewPost />} />
           </Route>
 

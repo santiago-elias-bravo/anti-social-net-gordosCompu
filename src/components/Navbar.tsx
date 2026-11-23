@@ -7,6 +7,7 @@ import {
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import { esAdmin } from "../constants/admin";
 
 interface UsuarioBusqueda {
   _id: string;
@@ -25,6 +26,7 @@ function Navbar() {
     )
     .slice(0, 6);
   const { user, logout } = useUser();
+  const esUsuarioAdmin = esAdmin(user);
   const navigate = useNavigate();
 
   function handleLogout() {
@@ -143,19 +145,17 @@ function Navbar() {
 
             {user ? (
               <>
-                <Link
-                  to="/nuevo-post"
-                  className="navbar-accion"
-                >
-                  Crear publicación
-                </Link>
+                {!esUsuarioAdmin && (
+                  <>
+                    <Link to="/nuevo-post" className="navbar-accion">
+                      Crear publicación
+                    </Link>
 
-                <Link
-                  to={`/perfil/${user._id}`}
-                  className="navbar-accion"
-                >
-                  Mi perfil
-                </Link>
+                    <Link to={`/perfil/${user._id}`} className="navbar-accion">
+                      Mi perfil
+                    </Link>
+                  </>
+                )}
 
                 <button
                   onClick={handleLogout}

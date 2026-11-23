@@ -12,6 +12,7 @@ import {
 import { Link } from "react-router-dom";
 import PostCard from "../components/PostCard";
 import { useUser } from "../context/UserContext";
+import { esAdmin } from "../constants/admin";
 
 interface Tag {
   _id: string;
@@ -56,11 +57,23 @@ interface PostCardData {
 function Home() {
   const API_URL = import.meta.env.VITE_API_URL;
   const { user } = useUser();
+  const esUsuarioAdmin = esAdmin(user);
 
   const [publicaciones, setPublicaciones] = useState<PostCardData[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [etiquetasPopulares, setEtiquetasPopulares] = useState<Tag[]>([]);
+  const [busquedaEtiqueta, setBusquedaEtiqueta] = useState("");
+
+  const terminoEtiqueta = busquedaEtiqueta.trim().replace(/^#/, "").toLowerCase();
+  const publicacionesFiltradas = terminoEtiqueta
+    ? publicaciones.filter((publicacion) =>
+        publicacion.tags.some((tag) =>
+          tag.toLowerCase().includes(terminoEtiqueta),
+        ),
+      )
+    : publicaciones;
+
   useEffect(() => {
     async function obtenerPublicaciones() {
       try {
@@ -190,19 +203,23 @@ function Home() {
                   🏠 Inicio
                 </Link>
 
-                <Link
-                  to="/nuevo-post"
-                  className="text-dark text-decoration-none"
-                >
-                  ✏️ Crear publicación
-                </Link>
+                {!esUsuarioAdmin && (
+                  <Link
+                    to="/nuevo-post"
+                    className="text-dark text-decoration-none"
+                  >
+                    ✏️ Crear publicación
+                  </Link>
+                )}
 
-                <Link
-                  to={user ? `/perfil/${user._id}` : "/login"}
-                  className="text-dark text-decoration-none"
-                >
-                  👤 Mi cuenta
-                </Link>
+                {!esUsuarioAdmin && (
+                  <Link
+                    to={user ? `/perfil/${user._id}` : "/login"}
+                    className="text-dark text-decoration-none"
+                  >
+                    👤 Mi cuenta
+                  </Link>
+                )}
 
               </div>
 
@@ -225,23 +242,37 @@ function Home() {
           </div>
 
           <Card className="border-0 shadow-sm rounded-4 mb-4">
-            <Card.Body className="d-flex justify-content-between align-items-center flex-wrap gap-3">
-              <div>
-                <h6 className="fw-bold mb-1">¿Qué tenés para compartir?</h6>
-
-                <small className="text-secondary">
-                  Creá una publicación para la comunidad.
-                </small>
-              </div>
-
-              <Link
-                to="/nuevo-post"
-                className="btn btn-primary btn-crear-publicacion"
-              >
-                + Crear post
-              </Link>
+            <Card.Body>
+              <Form.Control
+                type="search"
+                aria-label="Buscar publicaciones por etiqueta"
+                placeholder="Buscar publicaciones por etiqueta..."
+                value={busquedaEtiqueta}
+                onChange={(event) => setBusquedaEtiqueta(event.target.value)}
+              />
             </Card.Body>
           </Card>
+
+          {!esUsuarioAdmin && (
+            <Card className="border-0 shadow-sm rounded-4 mb-4">
+              <Card.Body className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                  <h6 className="fw-bold mb-1">¿Qué tenés para compartir?</h6>
+
+                  <small className="text-secondary">
+                    Creá una publicación para la comunidad.
+                  </small>
+                </div>
+
+                <Link
+                  to="/nuevo-post"
+                  className="btn btn-primary btn-crear-publicacion"
+                >
+                  + Crear post
+                </Link>
+              </Card.Body>
+            </Card>
+          )}
 
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h5 className="fw-bold mb-0">Últimas publicaciones</h5>
@@ -258,12 +289,16 @@ function Home() {
 
           {error && <Alert variant="danger">{error}</Alert>}
 
-          {!cargando && !error && publicaciones.length === 0 && (
-            <Alert variant="secondary">Todavía no hay publicaciones.</Alert>
+          {!cargando && !error && publicacionesFiltradas.length === 0 && (
+            <Alert variant="secondary">
+              {terminoEtiqueta
+                ? "No se encontraron publicaciones con esa etiqueta."
+                : "Todavía no hay publicaciones."}
+            </Alert>
           )}
 
           {!cargando &&
-            publicaciones.map((post) => (
+            publicacionesFiltradas.map((post) => (
               <PostCard
                 key={post.id}
                 id={post.id}

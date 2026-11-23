@@ -9,6 +9,8 @@ import {
 } from "react-bootstrap";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import { esAdmin } from "../constants/admin";
+import ConfirmDeletionModal from "../components/ConfirmDeletionModal";
 
 interface Tag {
   _id: string;
@@ -29,7 +31,7 @@ interface Post {
 
 function UserProfile() {
   const API_URL = import.meta.env.VITE_API_URL;
-  const { user, logout } = useUser();
+  const { user } = useUser();
   const navigate = useNavigate();
   //Barra de búsqueda
   const { id: perfilId } = useParams();
@@ -49,6 +51,60 @@ function UserProfile() {
   const [publicaciones, setPublicaciones] = useState<Post[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
+  const [errorAdmin, setErrorAdmin] = useState("");
+  const [eliminandoUsuario, setEliminandoUsuario] = useState(false);
+  const [eliminandoPublicacionId, setEliminandoPublicacionId] = useState<
+    string | null
+  >(null);
+  const [accionBorradoPendiente, setAccionBorradoPendiente] = useState<
+    { tipo: "usuario" } | { tipo: "publicacion"; id: string } | null
+  >(null);
+
+  async function eliminarUsuario() {
+    if (!user || !esAdmin(user) || !perfilId || eliminandoUsuario) return;
+
+    try {
+      setEliminandoUsuario(true);
+      setErrorAdmin("");
+
+      const response = await fetch(`${API_URL}/users/${perfilId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("No se pudo eliminar el usuario.");
+
+      navigate("/", { replace: true });
+    } catch (error) {
+      console.error("Error al eliminar usuario:", error);
+      setErrorAdmin("No se pudo eliminar el usuario. Intentá nuevamente.");
+    } finally {
+      setEliminandoUsuario(false);
+    }
+  }
+
+  async function eliminarPublicacionAdmin(postId: string) {
+    if (!user || !esAdmin(user) || eliminandoPublicacionId) return;
+
+    try {
+      setEliminandoPublicacionId(postId);
+      setErrorAdmin("");
+
+      const response = await fetch(`${API_URL}/posts/${postId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("No se pudo eliminar la publicación.");
+
+      setPublicaciones((actuales) =>
+        actuales.filter((publicacion) => publicacion._id !== postId),
+      );
+    } catch (error) {
+      console.error("Error al eliminar publicación:", error);
+      setErrorAdmin("No se pudo eliminar la publicación. Intentá nuevamente.");
+    } finally {
+      setEliminandoPublicacionId(null);
+    }
+  }
 
   async function handleSeguir() {
     if (!user || !perfilId || cambiandoSeguimiento) return;
@@ -248,23 +304,41 @@ function UserProfile() {
                   </div>
                 </div>
               </div>
-              {perfilId !== user._id && (
-                <Button
-                  variant={siguiendo ? "outline-dark" : "dark"}
-                  className="btn-tema-oscuro-contorno"
-                  onClick={handleSeguir}
-                  disabled={cambiandoSeguimiento}
-                >
-                  {cambiandoSeguimiento
-                    ? "Actualizando..."
-                    : siguiendo
-                      ? "Dejar de seguir"
-                      : "Seguir"}
-                </Button>
-              )}
+              <div className="d-flex gap-2">
+                {user && !esAdmin(user) && perfilId !== user._id && (
+                  <Button
+                    variant={siguiendo ? "outline-dark" : "dark"}
+                    className="btn-tema-oscuro-contorno"
+                    onClick={handleSeguir}
+                    disabled={cambiandoSeguimiento}
+                  >
+                    {cambiandoSeguimiento
+                      ? "Actualizando..."
+                      : siguiendo
+                        ? "Dejar de seguir"
+                        : "Seguir"}
+                  </Button>
+                )}
+
+                {user && esAdmin(user) && perfilId !== user._id && (
+                  <Button
+                    variant="outline-danger"
+                    onClick={() => setAccionBorradoPendiente({ tipo: "usuario" })}
+                    disabled={eliminandoUsuario}
+                  >
+                    {eliminandoUsuario ? (
+                      <Spinner animation="border" size="sm" />
+                    ) : (
+                      "Eliminar usuario"
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
           </Card.Body>
         </Card>
+
+        {errorAdmin && <Alert variant="danger">{errorAdmin}</Alert>}
 
         {/* Publicaciones */}
         <div className="d-flex justify-content-between align-items-center mb-3">
@@ -292,9 +366,11 @@ function UserProfile() {
                 Cuando publiques algo, aparecerá acá.
               </p>
 
-              <Link to="/nuevo-post" className="btn btn-dark">
-                Crear publicación
-              </Link>
+              {!esAdmin(user) && (
+                <Link to="/nuevo-post" className="btn btn-dark">
+                  Crear publicación
+                </Link>
+              )}
             </Card.Body>
           </Card>
         )}
@@ -367,17 +443,60 @@ function UserProfile() {
                         }`}
                   </span>
 
-                  <Link
-                    to={`/post/${post._id}`}
-                    className="btn btn-outline-dark btn-sm btn-tema-oscuro-contorno"
-                  >
-                    Ver más
-                  </Link>
+                  <div className="d-flex align-items-center gap-2">
+                    {esAdmin(user) && (
+                      <Button
+                        type="button"
+                        variant="outline-danger"
+                        size="sm"
+                        title="Eliminar publicación"
+                        aria-label="Eliminar publicación"
+                        disabled={eliminandoPublicacionId !== null}
+                        onClick={() =>
+                          setAccionBorradoPendiente({
+                            tipo: "publicacion",
+                            id: post._id,
+                          })
+                        }
+                      >
+                        {eliminandoPublicacionId === post._id ? (
+                          <Spinner animation="border" size="sm" />
+                        ) : (
+                          "Eliminar"
+                        )}
+                      </Button>
+                    )}
+
+                    <Link
+                      to={`/post/${post._id}`}
+                      className="btn btn-outline-dark btn-sm btn-tema-oscuro-contorno"
+                    >
+                      Ver más
+                    </Link>
+                  </div>
                 </div>
               </Card.Body>
             </Card>
           ))}
       </div>
+      <ConfirmDeletionModal
+        show={accionBorradoPendiente !== null}
+        message={
+          accionBorradoPendiente?.tipo === "usuario"
+            ? `¿Eliminar al usuario ${perfil?.nickName}? También se eliminarán sus publicaciones, comentarios e imágenes. Esta acción no se puede deshacer.`
+            : "¿Estás seguro de que querés eliminar esta publicación? También se eliminarán sus comentarios e imágenes. Esta acción no se puede deshacer."
+        }
+        onCancel={() => setAccionBorradoPendiente(null)}
+        onConfirm={() => {
+          const accion = accionBorradoPendiente;
+          setAccionBorradoPendiente(null);
+          if (accion?.tipo === "usuario") void eliminarUsuario();
+          if (accion?.tipo === "publicacion") {
+            void eliminarPublicacionAdmin(accion.id);
+          }
+        }}
+        deleting={eliminandoUsuario || eliminandoPublicacionId !== null}
+      />
     </Container>
   );
 }

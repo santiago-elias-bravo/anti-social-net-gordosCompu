@@ -86,7 +86,7 @@ function PostCard({
 
           <Link
             to={`/post/${id}`}
-            className="btn btn-outline-primary btn-sm"
+            className="btn btn-outline-primary btn-sm btn-tema-oscuro-contorno"
           >
             Ver publicación
           </Link>

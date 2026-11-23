@@ -1,14 +1,26 @@
 import { useState } from "react";
 import type { SubmitEvent } from "react";
-import { Container, Card, Form, Button, Alert, InputGroup } from "react-bootstrap";
+import {
+  Container,
+  Card,
+  Form,
+  Button,
+  Alert,
+  InputGroup,
+} from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import type { User } from "../context/UserContext";
+import { ADMIN_USER_ID } from "../constants/admin";
 
 function Login() {
   const [nickName, setNickName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [erroresCampo, setErroresCampo] = useState({
+    nickName: "",
+    password: "",
+  });
   const [cargando, setCargando] = useState(false);
   const [mostrarPassword, setMostrarPassword] = useState(false);
 
@@ -19,30 +31,84 @@ function Login() {
     event.preventDefault();
     setError("");
 
-    if (password !== "123456") {
-      setError("La contraseña es incorrecta.");
+    const nuevosErrores = {
+      nickName: nickName.trim() ? "" : "El nombre de usuario no puede estar vacío",
+      password: password.trim() ? "" : "La contraseña no puede estar vacía",
+    };
+    setErroresCampo(nuevosErrores);
+
+    if (nuevosErrores.nickName || nuevosErrores.password) {
+      return;
+    }
+
+    if (
+      nickName.trim().toLowerCase() === "adminasn" &&
+      password === "123456"
+    ) {
+      const usuarioAdmin: User = {
+        _id: ADMIN_USER_ID,
+        nickName: "AdminASN",
+        email: "admin@antisocial.local",
+      };
+
+      setUser(usuarioAdmin);
+      navigate("/");
       return;
     }
 
     try {
       setCargando(true);
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/users`);
+      let usuarioEncontrado: User;
 
-      if (!response.ok) {
-        throw new Error("No se pudo conectar con el servidor.");
-      }
+      if (password === "123456") {
+        // Opción fija: acepta 123456 solamente si el usuario existe.
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/users`);
 
-      const usuarios: User[] = await response.json();
+        if (!response.ok) {
+          throw new Error("No se pudo conectar con el servidor.");
+        }
 
-      const usuarioEncontrado = usuarios.find(
-        (usuario) =>
-          usuario.nickName.toLowerCase() === nickName.trim().toLowerCase(),
-      );
+        const usuarios: User[] = await response.json();
 
-      if (!usuarioEncontrado) {
-        setError("No existe un usuario con ese nombre.");
-        return;
+        const usuario = usuarios.find(
+          (item) =>
+            item.nickName.toLowerCase() === nickName.trim().toLowerCase(),
+        );
+
+        if (!usuario) {
+          setError("El nombre de usuario o la contraseña son incorrectos.");
+          return;
+        }
+
+        usuarioEncontrado = usuario;
+      } else {
+        // Opción registrada: el backend verifica el hash de la contraseña.
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/users/login`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              nickName: nickName.trim(),
+              password,
+            }),
+          },
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setError(
+            data.message ||
+              "El nombre de usuario o la contraseña son incorrectos.",
+          );
+          return;
+        }
+
+        usuarioEncontrado = data.user as User;
       }
 
       setUser(usuarioEncontrado);
@@ -92,7 +158,7 @@ function Login() {
 
             {error && <Alert variant="danger">{error}</Alert>}
 
-            <Form onSubmit={handleSubmit}>
+            <Form onSubmit={handleSubmit} noValidate>
               <Form.Group className="mb-3">
                 <Form.Label className="fw-semibold">
                   Nombre de usuario
@@ -102,9 +168,19 @@ function Login() {
                   type="text"
                   placeholder="Ingresá tu nombre de usuario"
                   value={nickName}
-                  onChange={(e) => setNickName(e.target.value)}
-                  required
+                  onChange={(e) => {
+                    setNickName(e.target.value);
+                    setErroresCampo((actuales) => ({
+                      ...actuales,
+                      nickName: "",
+                    }));
+                    setError("");
+                  }}
+                  isInvalid={!!erroresCampo.nickName}
                 />
+                <Form.Control.Feedback type="invalid">
+                  {erroresCampo.nickName}
+                </Form.Control.Feedback>
               </Form.Group>
 
               <Form.Group className="mb-4">
@@ -115,8 +191,15 @@ function Login() {
                     type={mostrarPassword ? "text" : "password"}
                     placeholder="Ingresá tu contraseña"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setErroresCampo((actuales) => ({
+                        ...actuales,
+                        password: "",
+                      }));
+                      setError("");
+                    }}
+                    isInvalid={!!erroresCampo.password}
                   />
 
                   <Button
@@ -132,6 +215,11 @@ function Login() {
                     {mostrarPassword ? "Ocultar" : "Ver"}
                   </Button>
                 </InputGroup>
+                {erroresCampo.password && (
+                  <div className="invalid-feedback d-block">
+                    {erroresCampo.password}
+                  </div>
+                )}
               </Form.Group>
 
               <Button

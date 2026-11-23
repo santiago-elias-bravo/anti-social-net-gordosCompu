@@ -10,6 +10,8 @@ import {
 } from "react-bootstrap";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import { esAdmin } from "../constants/admin";
+import ConfirmDeletionModal from "../components/ConfirmDeletionModal";
 
 interface Tag {
   _id: string;
@@ -60,11 +62,15 @@ function PublicationDetails() {
     string | null
   >(null);
   const [eliminandoPublicacion, setEliminandoPublicacion] = useState(false);
+  const [confirmarBorradoPublicacion, setConfirmarBorradoPublicacion] =
+    useState(false);
   const [errorEliminacion, setErrorEliminacion] = useState("");
   const [errorComentario, setErrorComentario] = useState<{
     id: string;
     mensaje: string;
   } | null>(null);
+  const [comentarioAEliminar, setComentarioAEliminar] =
+    useState<Comment | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -111,19 +117,13 @@ function PublicationDetails() {
     if (
       !user ||
       !publicacion ||
-      user._id !== publicacion.user._id ||
+      (!esAdmin(user) && user._id !== publicacion.user._id) ||
       enviando ||
       eliminandoPublicacion ||
       eliminandoComentarioId
     ) {
       return;
     }
-
-    const confirmar = window.confirm(
-      "¿Estás seguro de que querés eliminar esta publicación? También se eliminarán todos sus comentarios e imágenes. Esta acción no se puede deshacer.",
-    );
-
-    if (!confirmar) return;
 
     try {
       setEliminandoPublicacion(true);
@@ -146,8 +146,11 @@ function PublicationDetails() {
         );
       }
 
-      // Regresar al perfil del usuario
-      navigate(`/perfil/${user._id}`, { replace: true });
+      if (esAdmin(user)) {
+        navigate(`/perfil/${publicacion.user._id}`, { replace: true });
+      } else {
+        navigate(`/perfil/${user._id}`, { replace: true });
+      }
     } catch (error) {
       console.error("Error al eliminar publicación:", error);
       setErrorEliminacion(
@@ -161,19 +164,13 @@ function PublicationDetails() {
   async function eliminarComentario(commentId: string, autorId: string) {
     if (
       !user ||
-      user._id !== autorId ||
+      (!esAdmin(user) && user._id !== autorId) ||
       enviando ||
       eliminandoPublicacion ||
       eliminandoComentarioId !== null
     ) {
       return;
     }
-
-    const confirmar = window.confirm(
-      "¿Estás seguro de que querés eliminar este comentario?",
-    );
-
-    if (!confirmar) return;
 
     try {
       setEliminandoComentarioId(commentId);
@@ -385,8 +382,9 @@ function PublicationDetails() {
                 </div>
               </div>
 
-              {/* Solo el autor puede eliminar la publicación */}
-              {user?._id === publicacion.user._id && (
+              {/* El autor o el administrador pueden eliminar la publicación */}
+              {user &&
+                (user._id === publicacion.user._id || esAdmin(user)) && (
                 <Button
                   type="button"
                   variant="outline-danger"
@@ -398,7 +396,7 @@ function PublicationDetails() {
                     eliminandoComentarioId !== null ||
                     enviando
                   }
-                  onClick={eliminarPublicacion}
+                  onClick={() => setConfirmarBorradoPublicacion(true)}
                 >
                   {eliminandoPublicacion ? (
                     <Spinner animation="border" size="sm" />
@@ -522,7 +520,8 @@ function PublicationDetails() {
                           <h6 className="fw-bold mb-0">{nickName}</h6>
 
                           {/* Solo el autor puede ver la papelera */}
-                          {user?._id === comment.userId?._id && (
+                          {user &&
+                            (user._id === comment.userId?._id || esAdmin(user)) && (
                             <Button
                               type="button"
                               variant="outline-danger"
@@ -534,12 +533,7 @@ function PublicationDetails() {
                                 eliminandoPublicacion ||
                                 enviando
                               }
-                              onClick={() =>
-                                eliminarComentario(
-                                  comment._id,
-                                  comment.userId._id,
-                                )
-                              }
+                              onClick={() => setComentarioAEliminar(comment)}
                             >
                               {eliminandoComentarioId === comment._id ? (
                                 <Spinner animation="border" size="sm" />
@@ -590,7 +584,7 @@ function PublicationDetails() {
             {/* Formulario para comentar */}
             <hr className="my-4" />
 
-            {user ? (
+            {user && !esAdmin(user) ? (
               <>
                 <h5 className="fw-bold mb-3">Dejá tu comentario</h5>
 
@@ -634,18 +628,33 @@ function PublicationDetails() {
                   </div>
                 </Form>
               </>
-            ) : (
-              <Alert variant="secondary" className="mb-0">
-                Tenés que iniciar sesión para comentar.
-                <div className="mt-2">
-                  <Link to="/login" className="alert-link">
-                    Iniciar sesión
-                  </Link>
-                </div>
-              </Alert>
-            )}
+            ) : null}
           </Card.Body>
         </Card>
+
+        <ConfirmDeletionModal
+          show={confirmarBorradoPublicacion}
+          message="¿Estás seguro de que querés eliminar esta publicación? También se eliminarán todos sus comentarios e imágenes. Esta acción no se puede deshacer."
+          onCancel={() => setConfirmarBorradoPublicacion(false)}
+          onConfirm={() => {
+            setConfirmarBorradoPublicacion(false);
+            void eliminarPublicacion();
+          }}
+          deleting={eliminandoPublicacion}
+        />
+
+        <ConfirmDeletionModal
+          show={comentarioAEliminar !== null}
+          message="¿Estás seguro de que querés eliminar este comentario?"
+          onCancel={() => setComentarioAEliminar(null)}
+          onConfirm={() => {
+            if (!comentarioAEliminar) return;
+            const comentario = comentarioAEliminar;
+            setComentarioAEliminar(null);
+            void eliminarComentario(comentario._id, comentario.userId._id);
+          }}
+          deleting={eliminandoComentarioId !== null}
+        />
       </div>
     </Container>
   );
