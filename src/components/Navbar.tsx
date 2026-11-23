@@ -31,7 +31,16 @@ function Navbar() {
     logout();
     navigate("/");
   }
-  
+  const [temaOscuro, setTemaOscuro] = useState(
+    () => localStorage.getItem("tema") === "oscuro",
+  );
+
+  useEffect(() => {
+    const tema = temaOscuro ? "oscuro" : "claro";
+    document.documentElement.setAttribute("data-tema", tema);
+    localStorage.setItem("tema", tema);
+  }, [temaOscuro]);
+
   useEffect(() => {
     async function cargarUsuarios() {
       try {
@@ -97,7 +106,7 @@ function Navbar() {
                 <Form.Control
                   type="search"
                   aria-label="Buscar usuarios"
-                  placeholder="Buscar..."
+                  placeholder="Buscar usuarios..."
                   value={busqueda}
                   onChange={(event) => setBusqueda(event.target.value)}
                   className="border-start-0"
@@ -128,7 +137,7 @@ function Navbar() {
                 </div>
               )}
             </div>
-            <Link to="/" className="text-white text-decoration-none">
+            <Link to="/" className="navbar-accion">
               Inicio
             </Link>
 
@@ -136,36 +145,45 @@ function Navbar() {
               <>
                 <Link
                   to="/nuevo-post"
-                  className="text-white text-decoration-none"
+                  className="navbar-accion"
                 >
                   Crear publicación
                 </Link>
 
                 <Link
                   to={`/perfil/${user._id}`}
-                  className="text-white text-decoration-none"
+                  className="navbar-accion"
                 >
                   Mi perfil
                 </Link>
 
                 <button
                   onClick={handleLogout}
-                  className="btn btn-outline-light"
+                  className="navbar-accion"
                 >
                   Cerrar sesión
                 </button>
               </>
             ) : (
-              <div className="d-flex gap-2">
-                <Link to="/login" className="btn btn-outline-light">
+              <div className="d-flex gap-3">
+                <Link to="/login" className="navbar-accion">
                   Iniciar sesión
                 </Link>
 
-                <Link to="/registro" className="btn btn-primary">
+                <Link to="/registro" className="navbar-accion">
                   Registrarse
                 </Link>
               </div>
             )}
+            <button
+              type="button"
+              className="navbar-accion"
+              onClick={() => setTemaOscuro((actual) => !actual)}
+              aria-label={`Cambiar a tema ${temaOscuro ? "claro" : "oscuro"}`}
+              title={`Cambiar a tema ${temaOscuro ? "claro" : "oscuro"}`}
+            >
+              {temaOscuro ? "☀️" : "🌙"}
+            </button>
           </div>
         </BootstrapNavbar.Collapse>
       </Container>

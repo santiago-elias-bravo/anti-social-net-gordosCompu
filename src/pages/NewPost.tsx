@@ -446,7 +446,7 @@ function NewPost() {
 
                   <Button
                     type="button"
-                    variant="outline-dark"
+                    variant="outline-secondary"
                     onClick={handleCrearEtiqueta}
                     disabled={
                       publicando ||
@@ -628,6 +628,7 @@ function NewPost() {
                 <Button
                   type="submit"
                   variant="dark"
+                  className="btn-crear-publicacion"
                   disabled={publicando || creandoEtiqueta}
                 >
                   {publicando ? "Publicando..." : "Crear publicación"}

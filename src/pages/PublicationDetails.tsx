@@ -485,7 +485,7 @@ function PublicationDetails() {
             <div className="d-flex justify-content-between align-items-center mb-4">
               <h3 className="fw-bold mb-0">Comentarios</h3>
 
-              <Badge bg="dark" pill>
+              <Badge bg="dark" pill className="contador-tema-oscuro">
                 {publicacion.comments.length}
               </Badge>
             </div>
@@ -565,7 +565,7 @@ function PublicationDetails() {
                           )}
                         </div>
 
-                        <div className="bg-light rounded-3 p-3">
+                        <div className="bg-light rounded-3 p-3 burbuja-comentario">
                           <p className="mb-0 text-break">{comment.content}</p>
                         </div>
 
@@ -621,6 +621,7 @@ function PublicationDetails() {
                     <Button
                       type="submit"
                       variant="dark"
+                      className="btn-tema-oscuro-contorno"
                       disabled={
                         enviando ||
                         !comentario.trim() ||

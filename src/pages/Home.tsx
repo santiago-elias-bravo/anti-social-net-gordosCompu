@@ -11,6 +11,7 @@ import {
 } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import PostCard from "../components/PostCard";
+import { useUser } from "../context/UserContext";
 
 interface Tag {
   _id: string;
@@ -54,12 +55,12 @@ interface PostCardData {
 
 function Home() {
   const API_URL = import.meta.env.VITE_API_URL;
+  const { user } = useUser();
 
   const [publicaciones, setPublicaciones] = useState<PostCardData[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [etiquetasPopulares, setEtiquetasPopulares] = useState<Tag[]>([]);
-
   useEffect(() => {
     async function obtenerPublicaciones() {
       try {
@@ -196,9 +197,13 @@ function Home() {
                   ✏️ Crear publicación
                 </Link>
 
-                <Link to="/login" className="text-dark text-decoration-none">
+                <Link
+                  to={user ? `/perfil/${user._id}` : "/login"}
+                  className="text-dark text-decoration-none"
+                >
                   👤 Mi cuenta
                 </Link>
+
               </div>
 
               <hr />
@@ -220,12 +225,6 @@ function Home() {
           </div>
 
           <Card className="border-0 shadow-sm rounded-4 mb-4">
-            <Card.Body>
-              <Form.Control type="text" placeholder="¿Qué estás buscando?" />
-            </Card.Body>
-          </Card>
-
-          <Card className="border-0 shadow-sm rounded-4 mb-4">
             <Card.Body className="d-flex justify-content-between align-items-center flex-wrap gap-3">
               <div>
                 <h6 className="fw-bold mb-1">¿Qué tenés para compartir?</h6>
@@ -235,7 +234,10 @@ function Home() {
                 </small>
               </div>
 
-              <Link to="/nuevo-post" className="btn btn-primary">
+              <Link
+                to="/nuevo-post"
+                className="btn btn-primary btn-crear-publicacion"
+              >
                 + Crear post
               </Link>
             </Card.Body>
@@ -286,7 +288,7 @@ function Home() {
                     key={tag._id}
                     bg="light"
                     text="dark"
-                    className="border rounded-pill px-3 py-2 fw-medium"
+                    className="etiqueta-popular border rounded-pill px-3 py-2 fw-medium"
                   >
                     #{tag.name}
                   </Badge>
@@ -305,7 +307,10 @@ function Home() {
                 Registrate y empezá a compartir tus propias publicaciones.
               </p>
 
-              <Link to="/registro" className="btn btn-primary w-100">
+              <Link
+                to="/registro"
+                className="btn btn-primary btn-crear-publicacion w-100"
+              >
                 Crear una cuenta
               </Link>
             </Card.Body>

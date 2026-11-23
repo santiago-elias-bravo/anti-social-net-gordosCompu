@@ -251,6 +251,7 @@ function UserProfile() {
               {perfilId !== user._id && (
                 <Button
                   variant={siguiendo ? "outline-dark" : "dark"}
+                  className="btn-tema-oscuro-contorno"
                   onClick={handleSeguir}
                   disabled={cambiandoSeguimiento}
                 >
@@ -269,7 +270,7 @@ function UserProfile() {
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h2 className="fw-bold mb-0">Mis publicaciones</h2>
 
-          <Badge bg="dark" pill>
+          <Badge bg="dark" pill className="contador-tema-oscuro">
             {publicaciones.length}
           </Badge>
         </div>
@@ -368,7 +369,7 @@ function UserProfile() {
 
                   <Link
                     to={`/post/${post._id}`}
-                    className="btn btn-outline-dark btn-sm"
+                    className="btn btn-outline-dark btn-sm btn-tema-oscuro-contorno"
                   >
                     Ver más
                   </Link>
