@@ -74,10 +74,6 @@ function UserProfile() {
     }
   }
 
-  function handleLogout() {
-    navigate("/");
-    logout();
-  }
   //Efecto de la persona elegida
   useEffect(() => {
     if (!perfilId) return;
@@ -225,16 +221,16 @@ function UserProfile() {
                 <div
                   className="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center fw-bold"
                   style={{
-                    width: "65px",
-                    height: "65px",
-                    fontSize: "1.6rem",
+                    width: "100px",
+                    height: "100px",
+                    fontSize: "2.5rem",
                   }}
                 >
                   {perfil.nickName.charAt(0).toUpperCase()}
                 </div>
 
                 <div>
-                  <h1 className="fw-bold mb-1">{perfil.nickName}</h1>
+                  <h2 className="fw-bold mb-1">{perfil.nickName}</h2>
                   <p className="text-secondary mb-0">
                     {perfilId === user._id ? "Mi perfil" : "Perfil"}
                   </p>
@@ -265,9 +261,6 @@ function UserProfile() {
                       : "Seguir"}
                 </Button>
               )}
-              <Button variant="outline-danger" onClick={handleLogout}>
-                Cerrar sesión
-              </Button>
             </div>
           </Card.Body>
         </Card>
