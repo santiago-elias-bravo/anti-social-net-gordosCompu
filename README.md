@@ -9,6 +9,7 @@ La interfaz está construida con React, TypeScript y Vite. Usa una API REST inde
 ### Requisitos
 
 - Node.js y npm.
+- MongoDB.
 - Docker Desktop con Docker Compose, para iniciar los servicios que necesita el backend.
 
 ### 1. Iniciar el backend
@@ -49,5 +50,28 @@ Vite mostrará en la terminal la dirección local de la aplicación. Abrir esa d
 
 ## URL de la API
 
-- **Base de la API:** [http://localhost:3000](http://localhost:3000)
+- **Repositorio del backend:** [trabajo-practico-2-gordoscompu](https://gitea.unahur.edu.ar/Estrategia-de-persistencia-C2-2026/trabajo-practico-2-gordoscompu)
+- **Base de la API local:** [http://localhost:3000](http://localhost:3000)
 - **Documentación Swagger:** [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+
+## Capturas de pantalla
+
+### Página de inicio
+
+![Página de inicio](./pagina-inicio.png)
+
+### Creación de cuenta
+
+![Creación de cuenta](./creacion-cuenta.png)
+
+### Inicio de sesión
+
+![Inicio de sesión](./inicio-sesion.png)
+
+### Perfil
+
+![Perfil de usuario](./perfil.png)
+
+### Detalle de publicación
+
+![Detalle de publicación](./detalle-publicacion.png)
